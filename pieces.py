@@ -40,7 +40,22 @@ class King(Piece):
         return abs(x1 - x2) <= 1 and abs(y1 - y2) <= 1
 
     def _get_valid_moves(self, current_coordinates, gamestate):
-        return np.array([])
+        x, y = current_coordinates
+        available_coordinates = []
+        for x_ in [-1, 0, 1]:
+            for y_ in [-1, 0, 1]:
+                if x == 0 and y == 0:
+                    continue
+                available_coordinates.append([x + x_, y + y_])
+
+        available_coordinates = np.array(available_coordinates)
+        invalid_moves = np.where((available_coordinates >= 8) | (available_coordinates < 0))
+        valid_moves = np.delete(available_coordinates, invalid_moves[0], axis=0)
+        valid_moves = self.remove_same_color_from_coordinates(valid_moves, gamestate)
+
+        print(valid_moves)
+
+        return np.array(valid_moves)
 
 
 class Queen(Piece):
