@@ -12,12 +12,9 @@ class Piece:
             self.color_representation = -1
         self.image = pygame.image.load(f'graph/{color}{self.char}.png').convert_alpha()
 
-    def is_valid_move(self, pos_from, pos_to):
-        x1, y1 = pos_from
-        x2, y2 = pos_to
-        return self.check_validity(x1, y1, x2, y2)
-
     def remove_same_color_from_coordinates(self, valid_moves, gamestate):
+        if valid_moves.size == 0:
+            return valid_moves
         valid_moves_msk = gamestate.color_mask[valid_moves[:, 1],
                                                valid_moves[:, 0]] * self.color_representation
 
@@ -27,7 +24,11 @@ class Piece:
     def get_valid_moves(self, pos_from, gamestate):
         current_coordinates = np.array(pos_from)
         valid_moves = self._get_valid_moves(current_coordinates, gamestate)
+        return valid_moves
 
+    def remove_out_of_bounds_moves(self, available_coordinates):
+        invalid_moves = np.where((available_coordinates >= 8) | (available_coordinates < 0))
+        valid_moves = np.delete(available_coordinates, invalid_moves[0], axis=0)
         return valid_moves
 
 
@@ -35,6 +36,10 @@ class King(Piece):
     def __init__(self, color):
         self.char = 'K'
         super().__init__(color)
+        if self.color == 'w':
+            self.location = np.array([7, 4])
+        elif self.color == 'b':
+            self.location = np.array([0, 4])
 
     def check_validity(self, x1, y1, x2, y2):
         return abs(x1 - x2) <= 1 and abs(y1 - y2) <= 1
@@ -49,13 +54,13 @@ class King(Piece):
                 available_coordinates.append([x + x_, y + y_])
 
         available_coordinates = np.array(available_coordinates)
-        invalid_moves = np.where((available_coordinates >= 8) | (available_coordinates < 0))
-        valid_moves = np.delete(available_coordinates, invalid_moves[0], axis=0)
+        valid_moves = self.remove_out_of_bounds_moves(available_coordinates)
         valid_moves = self.remove_same_color_from_coordinates(valid_moves, gamestate)
 
-        print(valid_moves)
-
         return np.array(valid_moves)
+
+    def __str__(self):
+        return f'{self.color} King'
 
 
 class Queen(Piece):
@@ -75,6 +80,9 @@ class Queen(Piece):
         elif rook_moves.size == 0:
             return bishop_moves
         return np.concatenate((rook_moves, bishop_moves))
+
+    def __str__(self):
+        return f'{self.color} Queen'
 
 
 class Rook(Piece):
@@ -113,6 +121,9 @@ class Rook(Piece):
 
         return np.array(valid_moves)
 
+    def __str__(self):
+        return f'{self.color} Rook'
+
 
 class Knight(Piece):
     def __init__(self, color):
@@ -129,12 +140,14 @@ class Knight(Piece):
         # Get indexes of places knight can move
         available_coordinates = current_coordinates + self.index_changes_when_move
 
-        # Remove invalid moves, such as moves outside tthe board
-        invalid_moves = np.where((available_coordinates >= 8) | (available_coordinates < 0))
-        valid_moves = np.delete(available_coordinates, invalid_moves[0], axis=0)
+        # Remove invalid moves, such as moves outside the board
+        valid_moves = self.remove_out_of_bounds_moves(available_coordinates)
         valid_moves = self.remove_same_color_from_coordinates(valid_moves, gamestate)
 
         return valid_moves
+
+    def __str__(self):
+        return f'{self.color} Knight'
 
 
 class Bishop(Piece):
@@ -180,6 +193,9 @@ class Bishop(Piece):
 
         return np.array(valid_moves)
 
+    def __str__(self):
+        return f'{self.color} Bishop'
+
 
 class Pawn(Piece):
     def __init__(self, color):
@@ -207,19 +223,46 @@ class Pawn(Piece):
         return False
 
     def _get_valid_moves(self, current_coordinates, gamestate):
-        # MISSING CAPTURES AND EN PASSENT
+        # MISSING EN PASSENT
         x, y = current_coordinates
+
         valid_moves = []
+
         if self.color == 'w':
-            valid_moves.append([x, y - 1])
+            if y != 0:
+                if gamestate.position[y - 1][x] is None:
+                    valid_moves.append([x, y - 1])
+
+                if x != 0 and gamestate.position[y - 1][x - 1] is not None:
+                    valid_moves.append([x - 1, y - 1])
+
+                if x != 7 and gamestate.position[y - 1][x + 1] is not None:
+                    valid_moves.append([x + 1, y - 1])
 
         elif self.color == 'b':
-            valid_moves.append([x, y + 1])
+            if y != 7:
+                if gamestate.position[y + 1][x] is None:
+                    valid_moves.append([x, y + 1])
+
+                if x != 0 and gamestate.position[y + 1][x - 1] is not None:
+                    valid_moves.append([x - 1, y + 1])
+
+                if x != 7 and gamestate.position[y + 1][x + 1] is not None:
+                    valid_moves.append([x + 1, y + 1])
 
         if not self.has_moved:
             if self.color == 'w':
-                valid_moves.append([x, y - 2])
+                if gamestate.position[y - 2][x] is None:
+                    valid_moves.append([x, y - 2])
+
             elif self.color == 'b':
-                valid_moves.append([x, y + 2])
+                if gamestate.position[y + 2][x] is None:
+                    valid_moves.append([x, y + 2])
+
+        valid_moves = self.remove_same_color_from_coordinates(
+            np.array(valid_moves), gamestate)
 
         return np.array(valid_moves)
+
+    def __str__(self):
+        return f'{self.color} Pawn'

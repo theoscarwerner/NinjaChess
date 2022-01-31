@@ -3,7 +3,7 @@ import math
 
 from pieces import *
 from board import GameState, Board
-from utils import highlight_coordinates
+from utils import highlight_coordinates, KingLocation, detect_if_in_check
 
 GAMESIZE = 480
 PIECE_OFFSET = GAMESIZE/8
@@ -15,7 +15,7 @@ def pos_to_index(pos):
 
 def main():
 
-    screen = pygame.display.set_mode((480, 480))
+    screen = pygame.display.set_mode((GAMESIZE, GAMESIZE))
     pygame.display.set_caption("Chess")
 
     board = Board(GAMESIZE, PIECE_OFFSET)
@@ -31,6 +31,7 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if first_click:
                     pos_from = pos_to_index(pygame.mouse.get_pos())
+                    print(pos_from)
                     piece = gamestate.get_piece_type(pos_from)
                     if piece is None:
                         pos_from = False
@@ -51,6 +52,7 @@ def main():
             pos_to = np.array(pos_to)
             if any(np.array_equal(np.array(pos_to), move) for move in valid_moves):
                 gamestate.move(pos_from, pos_to)
+                detect_if_in_check(gamestate, 'b')
             else:
                 print('Invalid Move!')
 
