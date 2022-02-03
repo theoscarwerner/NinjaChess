@@ -1,1 +1,3 @@
 # NinjaChess
+
+Work in progress
