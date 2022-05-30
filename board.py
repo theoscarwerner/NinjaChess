@@ -3,6 +3,7 @@ import random
 import math
 import numpy as np
 from pieces import *
+from utils import opposite_color
 
 
 class Board():
@@ -29,19 +30,25 @@ class Board():
 
 class GameState():
     def __init__(self):
+        # self.position = [
+        #     [Rook('b'), Knight('b'), Bishop('b'), Queen('b'), King('b'), Bishop('b'), Knight('b'), Rook('b')],
+        #     [Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b')],
+        #     [None, None, None, None, None, None, None, None],
+        #     [None, None, None, None, None, None, None, None],
+        #     [None, None, None, None, None, Queen('b'), None, None],
+        #     [None, None, None, None, None, None, None, None],
+        #     [Pawn('w'), Pawn('w'), Pawn('w'), None, Pawn('w'), Pawn('w'), Pawn('w'), Pawn('w')],
+        #     [Rook('w'), Knight('w'), Bishop('w'), Queen('w'), King('w'), Bishop('w'), Knight('w'), Rook('w')],
+        # ]
         self.position = [
-            [Rook('b'), Knight('b'), Bishop('b'), Queen('b'),
-             King('b'), Bishop('b'), Knight('b'), Rook('b')],
-            [Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b'),
-             Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b')],
+            [Rook('b'), Knight('b'), Bishop('b'), Queen('b'), King('b'), Bishop('b'), Knight('b'), Rook('b')],
+            [Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b'), Pawn('b')],
             [None, None, None, None, None, None, None, None],
             [None, None, None, None, None, None, None, None],
             [None, None, None, None, None, None, None, None],
             [None, None, None, None, None, None, None, None],
-            [Pawn('w'), Pawn('w'), Pawn('w'), Pawn('w'),
-             Pawn('w'), Pawn('w'), Pawn('w'), Pawn('w')],
-            [Rook('w'), Knight('w'), Bishop('w'), Queen('w'),
-             King('w'), Bishop('w'), Knight('w'), Rook('w')],
+            [Pawn('w'), Pawn('w'), Pawn('w'), Pawn('w'), Pawn('w'), Pawn('w'), Pawn('w'), Pawn('w')],
+            [Rook('w'), Knight('w'), Bishop('w'), Queen('w'), King('w'), Bishop('w'), Knight('w'), Rook('w')],
         ]
 
         self.color_mask = []
@@ -58,6 +65,8 @@ class GameState():
 
         self.color_mask = np.array(self.color_mask)
 
+        self.current_turn_color = 'w'
+
         self.w_king_location = np.array([4, 7])
         self.b_king_location = np.array([4, 0])
 
@@ -67,18 +76,43 @@ class GameState():
         elif color == 'b':
             return self.b_king_location
 
+    def change_to_next_players_turn(self):
+        self.current_turn_color = opposite_color(self.current_turn_color)
+
     def get_piece_type(self, pos):
         x, y = pos
         return self.position[y][x]
 
+    def update_position(self, piece, pos_from, pos_to):
+        # Update position
+        self.position[pos_from[1]][pos_from[0]] = None
+        self.position[pos_to[1]][pos_to[0]] = piece
+
+        # Update color_mask
+        piece = self.color_mask[pos_from[1]][pos_from[0]]
+        self.color_mask[pos_from[1]][pos_from[0]] = 0
+        self.color_mask[pos_to[1]][pos_to[0]] = piece
+
+    def create_backup_position(self):
+        self.backup_position = []
+        for row in self.position:
+            new_row = []
+            for piece in row:
+                if piece is not None:
+                    new_row.append(piece.copy())
+                else:
+                    new_row.append(None)
+
+    def revert_position(self):
+        self.position = self.backup_position
+
     def move(self, pos_from, pos_to):
+        self.create_backup_position()
+
         piece = self.position[pos_from[1]][pos_from[0]]
 
         if isinstance(piece, Pawn):
             piece.has_moved = True
-
-        self.position[pos_from[1]][pos_from[0]] = None
-        self.position[pos_to[1]][pos_to[0]] = piece
 
         if isinstance(piece, King):
             if piece.color == 'w':
@@ -86,6 +120,4 @@ class GameState():
             elif piece.color == 'b':
                 self.b_king_location = np.array([pos_to[0], pos_to[1]])
 
-        piece = self.color_mask[pos_from[1]][pos_from[0]]
-        self.color_mask[pos_from[1]][pos_from[0]] = 0
-        self.color_mask[pos_to[1]][pos_to[0]] = piece
+        self.update_position(piece, pos_from, pos_to)

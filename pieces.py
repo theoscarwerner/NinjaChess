@@ -31,6 +31,9 @@ class Piece:
         valid_moves = np.delete(available_coordinates, invalid_moves[0], axis=0)
         return valid_moves
 
+    def __sum__(self, other):
+        return self.value + other
+
 
 class King(Piece):
     def __init__(self, color):
@@ -40,6 +43,8 @@ class King(Piece):
             self.location = np.array([7, 4])
         elif self.color == 'b':
             self.location = np.array([0, 4])
+
+        self.value = 100000
 
     def check_validity(self, x1, y1, x2, y2):
         return abs(x1 - x2) <= 1 and abs(y1 - y2) <= 1
@@ -62,11 +67,15 @@ class King(Piece):
     def __str__(self):
         return f'{self.color} King'
 
+    def copy(self):
+        return King(self.color)
+
 
 class Queen(Piece):
     def __init__(self, color):
         self.char = 'Q'
         super().__init__(color)
+        self.value = 9
 
     def check_validity(self, x1, y1, x2, y2):
         # Bishop and rook validity with or
@@ -84,11 +93,15 @@ class Queen(Piece):
     def __str__(self):
         return f'{self.color} Queen'
 
+    def copy(self):
+        return Queen(self.color)
+
 
 class Rook(Piece):
     def __init__(self, color):
         self.char = 'R'
         super().__init__(color)
+        self.value = 5
 
     def check_validity(self, x1, y1, x2, y2):
         return x1 == x2 or y1 == y2
@@ -124,6 +137,9 @@ class Rook(Piece):
     def __str__(self):
         return f'{self.color} Rook'
 
+    def copy(self):
+        return Rook(self.color)
+
 
 class Knight(Piece):
     def __init__(self, color):
@@ -132,6 +148,7 @@ class Knight(Piece):
         self.index_changes_when_move = np.array([
             [1, 2], [-1, 2], [-1, -2], [1, -2], [2, 1], [-2, 1], [-2, -1], [2, -1]])
         super().__init__(color)
+        self.value = 3
 
     def check_validity(self, x1, y1, x2, y2):
         return set([abs(x1 - x2), abs(y1 - y2)]) == set([1, 2])
@@ -149,11 +166,15 @@ class Knight(Piece):
     def __str__(self):
         return f'{self.color} Knight'
 
+    def copy(self):
+        return Knight(self.color)
+
 
 class Bishop(Piece):
     def __init__(self, color):
         self.char = 'B'
         super().__init__(color)
+        self.value = 3
 
     def check_validity(self, x1, y1, x2, y2):
         return abs(x1 - x2) == abs(y1 - y2)
@@ -196,12 +217,16 @@ class Bishop(Piece):
     def __str__(self):
         return f'{self.color} Bishop'
 
+    def copy(self):
+        return Bishop(self.color)
+
 
 class Pawn(Piece):
     def __init__(self, color):
         self.char = 'p'
         self.has_moved = False
         super().__init__(color)
+        self.value = 1
 
     def check_validity(self, x1, y1, x2, y2):
         if x1 == x2:
@@ -266,3 +291,9 @@ class Pawn(Piece):
 
     def __str__(self):
         return f'{self.color} Pawn'
+
+    def copy(self):
+        new_pawn = Pawn(self.color)
+        if self.has_moved:
+            new_pawn.has_moved = True
+        return new_pawn

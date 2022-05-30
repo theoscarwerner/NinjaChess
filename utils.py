@@ -1,21 +1,16 @@
 import pygame
 from dataclasses import dataclass
-import numpy as np
-from pieces import Queen
+from pieces import Bishop
 
 RED = (255, 0, 0)
 
 
-@dataclass
-class KingLocation:
-    wKing: np.array
-    bKing: np.array
-
-    def get_location(self, color):
-        if color == 'w':
-            return self.wKing
-        elif color == 'b':
-            return self.bKing
+def opposite_color(color):
+    if color == 'b':
+        return 'w'
+    elif color == 'w':
+        return 'b'
+    raise ValueError('Something is up with the colors.')
 
 
 def detect_if_in_check(gamestate, color):
@@ -25,7 +20,7 @@ def detect_if_in_check(gamestate, color):
             if piece and piece.color != color:
                 valid_moves = piece.get_valid_moves((x, y), gamestate)
                 if valid_moves.size > 0 and (valid_moves == king_location).all(1).any():
-                    print('Check!!')
+                    print('Check')
                     return True
     return False
 
